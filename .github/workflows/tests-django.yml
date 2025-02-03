@@ -137,15 +137,11 @@ jobs:
           PSQL_CONN: postgres://postgres:test@localhost:5432/iasql
 
       - name: Run deploy script
-        uses: nick-fields/retry@v2
-        with:
-          max_attempts: 2
-          retry_on: error
-          timeout_minutes: 40
-          command: |
-            export AWS_ACCESS_KEY_ID=$(echo "${ACCESS_KEY_IDS}" | jq -r ".[${ACCOUNT_INDEX}]")
-            export AWS_SECRET_ACCESS_KEY=$(echo "${SECRET_ACCESS_KEYS}" | jq -r ".[${ACCOUNT_INDEX}]")
-            ./test/tutorials/django-ci.sh
+        timeout-minutes: 40
+        run: |
+          export AWS_ACCESS_KEY_ID=$(echo "${ACCESS_KEY_IDS}" | jq -r ".[${ACCOUNT_INDEX}]")
+          export AWS_SECRET_ACCESS_KEY=$(echo "${SECRET_ACCESS_KEYS}" | jq -r ".[${ACCOUNT_INDEX}]")
+          ./test/tutorials/django-ci.sh
         env:
           ACCOUNT_INDEX: ${{ steps['determine-test-account'].outputs['account_index'] }}
           AWS_REGION: ${{ needs.setup.outputs['region'] }}
