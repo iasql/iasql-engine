@@ -74,7 +74,7 @@
   "dependencies": {
     "@aws-sdk/client-acm": "^3.309.0",
     "@aws-sdk/client-apigatewayv2": "^3.309.0",
-    "@aws-sdk/client-appsync": "^3.309.0",
+    "@aws-sdk/client-appsync": "^3.490.0",
     "@aws-sdk/client-cloudformation": "^3.309.0",
     "@aws-sdk/client-cloudfront": "^3.309.0",
     "@aws-sdk/client-cloudwatch": "^3.309.0",
