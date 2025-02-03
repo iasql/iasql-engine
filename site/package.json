@@ -18,7 +18,7 @@
     "@docusaurus/core": "^2.4.0",
     "@docusaurus/preset-classic": "^2.4.0",
     "@mxssfd/typedoc-theme": "^1.0.6",
-    "@svgr/webpack": "^7.0.0",
+    "@svgr/webpack": "^8.1.0",
     "acorn-loose": "^8.3.0",
     "acorn-walk": "^8.2.0",
     "clsx": "^1.2.1",
