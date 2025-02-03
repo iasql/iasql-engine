@@ -24,7 +24,7 @@
     "@types/react-icons": "^3.0.0",
     "jsonwebtoken": "^9.0.0",
     "jwks-rsa": "^3.0.1",
-    "next": "13.1.6",
+    "next": "13.5.0",
     "pg": "^8.9.0",
     "pg-format": "^1.0.4",
     "pgsql-parser": "^13.4.1",
