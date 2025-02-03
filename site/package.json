@@ -15,7 +15,7 @@
     "write-heading-ids": "docusaurus write-heading-ids"
   },
   "dependencies": {
-    "@docusaurus/core": "^2.4.0",
+    "@docusaurus/core": "^2.4.3",
     "@docusaurus/preset-classic": "^2.4.0",
     "@mxssfd/typedoc-theme": "^1.0.6",
     "@svgr/webpack": "^7.0.0",
