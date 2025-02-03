@@ -28,7 +28,7 @@
     "pg": "^8.9.0",
     "pg-format": "^1.0.4",
     "pgsql-parser": "^13.4.1",
-    "posthog-js": "^1.43.1",
+    "posthog-js": "^1.57.2",
     "react": "18.2.0",
     "react-ace": "^10.1.0",
     "react-dom": "18.2.0",

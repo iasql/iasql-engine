@@ -592,11 +592,6 @@
     "@sentry/types" "7.37.1"
     "@sentry/utils" "7.37.1"
 
-"@sentry/types@7.22.0":
-  version "7.22.0"
-  resolved "https://registry.yarnpkg.com/@sentry/types/-/types-7.22.0.tgz#58e4ce77b523048e0f31e2ea4b597946d76f6079"
-  integrity sha512-LhCL+wb1Jch+OesB2CIt6xpfO1Ab6CRvoNYRRzVumWPLns1T3ZJkarYfhbLaOEIb38EIbPgREdxn2AJT560U4Q==
-
 "@sentry/types@7.37.1":
   version "7.37.1"
   resolved "https://registry.yarnpkg.com/@sentry/types/-/types-7.37.1.tgz#269da7da39c1a5243bf5f9a35370291b5cc205bb"
@@ -3620,12 +3615,11 @@ postgres-interval@^1.1.0:
   dependencies:
     xtend "^4.0.0"
 
-posthog-js@^1.43.1:
-  version "1.43.1"
-  resolved "https://registry.yarnpkg.com/posthog-js/-/posthog-js-1.43.1.tgz#b6874062076bcaab72127d4f77f3a8eac58cc18b"
-  integrity sha512-X8Z09nwfVlyrLXvLN3Yj1Vc5XQuAwopsUJgkwhUSVUAplwEVUFuFv4mFcPRAEUZaiRw86/fxNJfK/ccNjmqqzA==
+posthog-js@^1.57.2:
+  version "1.57.2"
+  resolved "https://registry.yarnpkg.com/posthog-js/-/posthog-js-1.57.2.tgz#131fb93e2ad099baff4317f3d91a4d6c96a08e7f"
+  integrity sha512-ER4gkYZasrd2Zwmt/yLeZ5G/nZJ6tpaYBCpx3CvocDx+3F16WdawJlYMT0IyLKHXDniC5+AsjzFd6fi8uyYlJA==
   dependencies:
-    "@sentry/types" "7.22.0"
     fflate "^0.4.1"
     rrweb-snapshot "^1.1.14"
 
