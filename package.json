@@ -83,7 +83,7 @@
     "@aws-sdk/client-codedeploy": "^3.309.0",
     "@aws-sdk/client-codepipeline": "^3.309.0",
     "@aws-sdk/client-dynamodb": "^3.309.0",
-    "@aws-sdk/client-ec2": "^3.309.0",
+    "@aws-sdk/client-ec2": "^3.490.0",
     "@aws-sdk/client-ecr": "^3.309.0",
     "@aws-sdk/client-ecr-public": "^3.309.0",
     "@aws-sdk/client-ecs": "^3.309.0",
