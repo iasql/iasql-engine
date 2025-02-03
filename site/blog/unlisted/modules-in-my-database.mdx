@@ -1,0 +1,45 @@
+---
+slug: modules-in-my-database
+title: Modules? In My Database? It's more likely than you think.
+authors: [dfellis]
+---
+
+# Modules? In My Database?
+
+## *It's more likely than you think*
+
+For IaSQL, as the primary user interface is PostgreSQL databases, we have some unique pressures on our tech stack compared to many other projects. One of these that [we didn't realize at first](https://github.com/iasql/iasql/commit/8467bde2709d32cbe625c2fc2d1a312b5eefaf2d), was that we can't use a traditional linear migration system for database schema management. Different users will want to work with a different subset of AWS services, and requiring the users to deal with *all* of the AWS schema would be too overwhelming; we felt overwhelmed looking at it ourselves!
+
+We needed another solution, one that can dynamically load *and unload* parts of the database schema on-the-fly, and eventually created a module system for IaSQL within Postgres. How did we come to the conclusion that a module system was necessary? And what kind of "module system," as that means different things to different people? There are in fact multiple different kinds of "module systems" for different programming languages. After some brainstorming, we hit on a few key insights that led us to the module system design that we now have.
+
+## Insight 1: Migrations are Degenerate Directed Acyclic Graphs
+
+The first thing we recognized is, presuming every user was building an IaSQL just for their own needs, they would each have their own migration files that would have some concepts in common and some not in common. Everyone would need a table to represent their AWS credentials, then you would need tables for the services that you use, with some of these being more foundational, like VPC and Security Groups, others building on top of that, like EC2, S3, RDS, and some on top of that, like ECS.
+
+If we assumed that they somehow came up with the same schema representation for each of these AWS services, the places where they would diverge would be which services they included in their migrations and which were skipped. If one of these was open source and the others were forks, then the forked migration files could be represented as [Directed Acyclic Graphs (DAGs)](https://en.wikipedia.org/wiki/Directed_acyclic_graph) with the branch points having two alternate paths.
+
+Then, how would one of these forks that skipped some AWS service then pull in that service in the future if they have diverged in the meantime? They would likely have to [`git cherry-pick`](https://git-scm.com/docs/git-cherry-pick) the migration and entity management code from the other repo and apply it to their own. It's clearly shared code, but it can't be shared easily.
+
+There's no need for that, though, *if* the migrations could also declare which migrations they depend on, instead of implicitly depending on all migrations that came before it in time, then the DAG could be shared
+
+Most modern module systems ([RubyGems](https://rubygems.org/), [NPM](https://www.npmjs.com/), [Cargo](https://crates.io/), etc) automatically handle collisions between dependencies of dependencies with nested scoping of the colliding modules. We realized that this could be accomplished with [Postgres Schemas](https://www.postgresql.org/docs/current/sql-createschema.html) (which is a different concept from the normal "database schema" concept), but allowing duplicates of modules would be super-confusing when you're trying to query, and impossible to understand "intent" if someone makes different changes to the same entity in two different versions of the same module. So, if we restrict ourselves to only the `public` Postgres schema, we cannot have two modules installed at the same time that use the same table names.
+
+## Insight 2: What's in a namespace? inodes and apt-get
+
+Being restricted to a singular namespace may seem very limiting, but it isn't really; your filesystem only has one namespace, for instance. What's that, you say? IaSQL is a Node project, so it's gotta have half a million `index.js` files in it and they all have the same name? Well, `tree | grep index.js | wc -l` tells me there's only 12,663 `index.js` files at the time of writing, but there are no collisions because they have distinct names using the full path to the file, or by their true names, [inodes](https://en.wikipedia.org/wiki/Inode). Every file in your filesystem could be thought of as a table where the `inode` number is the index to the table, the full path is a "name" column, and the file data is a binary blob column. Then directories simply become (and are on Unix-like OSes) special files where their data is the set of `inode`s contained within them, though in an actual SQL database it would be cleaner to represent them with a join table where both join indexes are `inode` values for the parent and child, respectively, and the `parent` being empty is just a convention (and one that the web has constantly fought against, what with `index.html` and `index.js` files representing the data of the directory name itself).
+
+Thinking about filesystems as databases, we wondered what was the filesystem equivalent of migrations, and quickly concluded that Linux-style package managers fit that bill, with `apt-get` from Debian Linux immediately coming to mind as one of the more successful package managers. Simplifying things, the [`.deb` package format](https://en.wikipedia.org/wiki/Deb_%28file_format%29) is a collection of files that make up the package, and [metadata](https://en.wikipedia.org/wiki/Deb_%28file_format%29#Control_archive) that declares the pre-requisites it needs to be installed, primarily other packages, and what specific files this package provides. The [Debian repository](https://en.wikipedia.org/wiki/Debian#Repositories) is a centrally controlled DAG of all supported packages that can be installed, and avoided the [RPM Hell](https://en.wikipedia.org/wiki/Dependency_hell#Platform-specific) reputation the mostly-technically-equivalent [RedHat Package Management](https://en.wikipedia.org/wiki/RPM_Package_Manager) system had by discouraging third party repositories that could have colliding packages and/or files within those packages.
+
+We can map this to Postgres pretty cleanly: tables, views, enums, and functions all become different kinds of files, and the dependency metadata and module repository is maintained centrally by IaSQL.
+
+<!-- Getting really tired. Not sure how to segue to this next point, also not sure if the next point is all that relevant to this particular blog post, though I think it "fills it out" in terms of helping the user understand things -->
+
+## Insight 3: Entities are config for Daemons
+
+<!-- TODO: Fill this in better -->
+
+The tables are like config files, with each row representing the configuration of a logical entity that the "daemon" the config file is for uses to set up and work with that entity. And like Unix daemons, the daemon 1) is not directly accessible by the regular user account, just like the module code lives within the engine and is not directly accessible within Postgres and 2) the daemon can manipulate the configuration file as well, filling out skipped configuration with default values or other useful metadata.
+
+## Conclusion
+
+<!-- TODO -->
