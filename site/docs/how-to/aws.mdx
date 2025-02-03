@@ -49,3 +49,36 @@ SELECT
 FROM
   iasql_install ('aws_iam', 'aws_cloudwatch', 'aws_ecr', 'aws_ecs_fargate', 'aws_elb', 'aws_security_group', 'aws_vpc');
 ```
+
+## Restricting AWS credentials to specific regions
+
+Sometimes, you may want or need to restrict access to a specific region. To do this, you will need to make sure that the credentials for the IAM role given to IaSQL have a policy that restricts access only to AWS resources in that region. This can be done by creating a custom policy and attaching it to the relevant IAM role. The following [guide](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_create.html) will walk you through creating a new policy. Your policy will need to look something like this:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "*",
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "us-west-2"
+        }
+      }
+    }
+  ]
+}
+```
+
+You can replace 'us-west-2' with your desired region.
+
+Once you have the policy in place, you need to update your IAM identity (user, user group or role) and [attach the new policy](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_manage-attach-detach.html). By default, IaSQL attempts to load resources from all enabled regions. Assuming that our credentials only have access to a single region, let's say `us-west-2`, we need to run a specific query after connecting to our database to inform IaSQL that we only want to manage resources in that region:
+
+```sql
+-- Make sure our default region is `us-west-2` if we did not set it up correctly while connecting
+SELECT * FROM default_aws_region('us-west-2');
+-- Disable in IaSQL all other regions
+UPDATE aws_regions SET is_enabled = FALSE WHERE is_default = FALSE;
+```
