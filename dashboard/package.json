@@ -33,7 +33,7 @@
     "react-ace": "^10.1.0",
     "react-dom": "18.2.0",
     "react-icons": "^4.8.0",
-    "semver": "^7.3.8",
+    "semver": "^7.5.2",
     "stripe": "^11.15.0",
     "typeorm": "^0.3.12",
     "unique-names-generator": "^4.7.1",
