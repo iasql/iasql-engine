@@ -17,7 +17,7 @@
   "dependencies": {
     "@docusaurus/core": "^2.4.0",
     "@docusaurus/preset-classic": "^2.4.0",
-    "@mxssfd/typedoc-theme": "^1.0.6",
+    "@mxssfd/typedoc-theme": "^1.1.2",
     "@svgr/webpack": "^7.0.0",
     "acorn-loose": "^8.3.0",
     "acorn-walk": "^8.2.0",
@@ -30,7 +30,7 @@
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "trim": "1.0.1",
-    "typedoc": "^0.23.28",
+    "typedoc": "^0.24.8",
     "typedoc-plugin-markdown": "^3.14.0",
     "unist-util-visit": "^2.0.3",
     "url-loader": "^4.1.1"
