@@ -1,0 +1,9 @@
+Flask==2.2.3
+langchain
+psycopg2-binary
+faiss-cpu
+tiktoken
+promptlayer
+python-dotenv
+flask_cors
+flask_session

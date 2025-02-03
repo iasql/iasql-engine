@@ -1,7 +1,9 @@
-import { forwardRef, useCallback, useEffect, useRef } from 'react';
+import { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
 import ReactAce, { IAceEditorProps } from 'react-ace/lib/ace';
 
 import dynamic from 'next/dynamic';
+import debounce from 'lodash/debounce';
+
 
 import { useQueryParams } from '@/hooks/useQueryParams';
 
@@ -32,7 +34,6 @@ export default function IasqlEditor() {
     dispatch,
     isDarkMode,
     selectedDb,
-    installedModules,
     functions,
     token,
     editorTabs,
@@ -42,6 +43,7 @@ export default function IasqlEditor() {
   const editorRef = useRef(null as null | ReactAce);
   const prevTabsLenRef = useRef(null as null | number);
   const queryParams = useQueryParams();
+  const [suggestions, setSuggestions] = useState([]);
 
   // Handlers
   const getInitialQuery = useCallback((sql: string | null) => {
@@ -50,8 +52,9 @@ export default function IasqlEditor() {
     return initialQuery;
   }, []);
 
-  const handleEditorContentUpdate = useCallback(
-    (content: string) => {
+  const handleEditorContentUpdate =  useCallback(
+    (content: string, event:any) => {
+      editorRef?.current?.editor.commands.on('afterExec', eventData => {handleAfterExec(eventData); });
       dispatch({ action: ActionType.EditContent, data: { content } });
     },
     [dispatch],
@@ -93,7 +96,7 @@ export default function IasqlEditor() {
 
   // Set up initial query in editor content
   useEffect(() => {
-    handleEditorContentUpdate(getInitialQuery(queryParams.get('sql')));
+    handleEditorContentUpdate(getInitialQuery(queryParams.get('sql')), null);
   }, [getInitialQuery, handleEditorContentUpdate, queryParams]);
 
   // Set up command to enable Ctrl-Enter runs
@@ -130,39 +133,24 @@ export default function IasqlEditor() {
     });
   }, []);
 
-  // Set up editor autocomplete settings
-  useEffect(() => {
-    // https://stackoverflow.com/questions/53622096/how-to-specify-a-list-of-custom-tokens-to-list-for-autocompletion-in-ace-editor
-    editorRef?.current?.editor?.completers?.push({
-      getCompletions: (_editor: any, _session: any, _pos: any, _prefix: any, callback: any) => {
-        const completions: any[] = [];
-        // we can use session and pos here to decide what we are going to show
-        const autoCompleteIasqlKeywords = [
-          // Table Names
-          ...Object.values(installedModules)
-            .map(mod => Object.keys(mod))
-            .flat()
-            .map(value => ({ value, meta: 'Table' })),
-          // Column Names
-          ...Object.values(installedModules)
-            .map(mod => Object.values(mod))
-            .flat()
-            .map(tbl => Object.entries(tbl).map(([value, meta]) => ({ value, meta })))
-            .flat(),
-          // Function Names
-          ...Object.values(functions)
-            .map(fn => Object.keys(fn))
-            .flat()
-            .map(fn => ({ value: fn, meta: 'Function' })),
-        ];
-        autoCompleteIasqlKeywords?.push({ value: 'iasql_help()', meta: 'Function' });
-        autoCompleteIasqlKeywords?.forEach(completion => {
-          completions.push(completion);
-        });
-        callback(null, completions);
-      },
-    });
-  }, [installedModules, functions]);
+  const completer = {
+    getCompletions: async function(editor: any, session: any, pos: any, prefix: any, callback: any) {
+      console.log("in get completions");
+      console.log(suggestions);
+      if (suggestions) {
+        callback(null, suggestions);
+      }
+      else callback(null, []);
+    },
+    insertSnippet: function(editor:any, data:any) {
+      /*editor.forEachSelection(function() {
+          editor.insert(data.caption)
+      })*/
+      console.log("in insert match");
+      console.log(data);
+    }
+  }
+  if (editorRef.current?.editor.completers) editorRef.current.editor.completers = [completer];
 
   useEffect(() => {
     if (editorTabs.length !== prevTabsLenRef.current) {
@@ -184,6 +172,59 @@ export default function IasqlEditor() {
       prevTabsLenRef.current = editorTabs.length;
     }
   }, [editorTabs]);
+
+  const handleAfterExec = debounce((eventData:any) => {
+  
+        if (eventData.command.name === 'insertstring') {
+      
+        console.log('User typed a character: ' + eventData.args);
+        const content = editorRef?.current?.editor.session.getValue() ?? '';
+        const pos = editorRef?.current?.editor.getCursorPosition();
+
+        const line = editorRef?.current?.editor.session.getLine(pos!.row) ?? '';
+
+        // retrieve also the 2 previous lines
+        const linesToRetrieve = 3;
+        const lines = content.split('\n');
+        let selectedLines:any[] = [];
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].includes(line)) {
+            const startIndex = Math.max(0, i - linesToRetrieve + 1);
+            const endIndex = i + 1;
+            selectedLines = lines.slice(startIndex, endIndex);
+            break;
+          }
+        }
+        const finalText = (selectedLines.length == 0) ? line:selectedLines.join('\n');
+        if (finalText && finalText.length>3) {
+          // having the final text, call the sqlpal autocomplete to get a completion
+          const requestOptions = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ conn_str: sessionStorage.getItem('connString'), query: finalText }),
+            credentials: 'include' as RequestCredentials
+          };
+          const endpoint = process.env.AUTOCOMPLETE_ENDPOINT ?? 'http://localhost:5000/autocomplete';
+          //const endpoint = "http://192.168.2.38:5000/autocomplete"
+          fetch(endpoint, requestOptions)
+          .then(response => response.json())
+          .then(response => {
+            if (response['output_text']) {
+              // check if response is a valid sql query
+              const sg = [{value: '\n'+response['output_text'], meta: 'custom', score: 1000}];
+              setSuggestions(sg as []);
+            }
+          })
+          .catch(error => console.error(error));          
+        }
+    }
+}, 300);
+
+useEffect(() => {
+  if (suggestions.length > 0) {
+    editorRef?.current?.editor.execCommand('startAutocomplete');
+  }
+}, [suggestions]);
 
   return (
     <VBox customClasses='mb-3'>
@@ -213,7 +254,7 @@ export default function IasqlEditor() {
               useWorker: false,
               enableBasicAutocompletion: true,
               enableLiveAutocompletion: true,
-              enableSnippets: false,
+              enableSnippets: true,
               showLineNumbers: true,
               tabSize: 2,
               theme: isDarkMode ? 'ace/theme/monokai' : 'ace/theme/tomorrow',

@@ -30,6 +30,8 @@ export enum ActionType {
   InstallModule = 'InstallModule',
   SelectDb = 'SelectDb',
   RunSql = 'RunSql',
+  DiscoverSchema = 'DiscoverSchema',
+  SetConnStr = 'ConnStr',
   RunAutocompleteSql = 'RunAutocompleteSql',
   EditContent = 'EditContent',
   FetchData = 'FetchData',
@@ -60,6 +62,7 @@ interface AppState {
   selectedDb: any;
   oldestVersion?: string;
   latestVersion?: string;
+  connString?: string;
   isRunningSql: boolean;
   databases: any[];
   error: string | null;
@@ -136,6 +139,23 @@ const gettingStarted = `-- Welcome to IaSQL! Steps to get started:
 -- Happy coding :)
 `;
 
+function discoverData(connString: string) {
+  const requestOptions = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ conn_str: connString }),
+    credentials: 'include' as RequestCredentials,
+  };
+  const endpoint = process.env.AUTOCOMPLETE_ENDPOINT ?? 'http://localhost:5000/discover';
+  //const endpoint = "http://192.168.2.38:5000/discover"
+  
+  fetch(endpoint, requestOptions)
+    .then(response => response.json())
+    .catch(error => {
+      console.error('Error:', error);
+    });
+}
+
 const reducer = (state: AppState, payload: Payload): AppState => {
   const { error } = payload?.data ?? { error: null };
   if (error) {
@@ -199,6 +219,24 @@ const reducer = (state: AppState, payload: Payload): AppState => {
           forceRun: false,
         };
       }
+
+      // add the query to the index
+      if (queryRes && queryRes.length>0) {
+        const requestOptions = {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: queryRes[0].statement }),
+          credentials: 'include' as RequestCredentials,
+        };
+        const endpoint = process.env.AUTOCOMPLETE_ENDPOINT ?? 'http://localhost:5000/add';
+        
+        fetch(endpoint, requestOptions)
+          .then(response => response.json())
+          .catch(error => {
+            console.error('Error:', error);
+          });
+        }
+
       return { ...state, editorTabs: tabsCopy, forceRun: false };
     }
     case ActionType.RunAutocompleteSql: {
@@ -345,6 +383,18 @@ SELECT * FROM iasql_uninstall('${uninstallModule}');
         editorTabsCreated: state.editorTabsCreated + 1,
         forceRun: true,
       };
+    }
+    case ActionType.SetConnStr: {
+      const { connString } = payload.data;
+      sessionStorage.setItem('connString', connString);
+
+      // fetch data from database
+      discoverData(connString);
+      return { ...state, connString };
+    }
+    case ActionType.DiscoverSchema: {
+      if (state.connString)
+        discoverData(state.connString);
     }
   }
   return state;
@@ -506,6 +556,12 @@ const middlewareReducer = async (
             runningDb?.alias,
             initializingQueries,
           );
+
+          // rediscover the schema for autocompletion
+          dispatch({
+            action: ActionType.DiscoverSchema,
+          })
+      
         }
       } catch (e: any) {
         if (e.message) {
@@ -603,6 +659,7 @@ const AppProvider = ({ children }: { children: any }) => {
     isDarkMode: false,
     shouldShowDisconnect: false,
     shouldShowConnect: false,
+    connString: '',
     editorSelectedTab: 0,
     editorTabsCreated: 1,
     editorTabs: [
@@ -646,6 +703,7 @@ const AppProvider = ({ children }: { children: any }) => {
         isRunningSql: state.isRunningSql,
         shouldShowDisconnect: state.shouldShowDisconnect,
         shouldShowConnect: state.shouldShowConnect,
+        connString: state.connString,
         editorTabs: state.editorTabs,
         editorSelectedTab: state.editorSelectedTab,
         editorTabsCreated: state.editorTabsCreated,

@@ -1,0 +1,8 @@
+services:
+   flask:
+        build: .
+        container_name: flask
+        ports:
+            - "9877:5000"
+        volumes:
+            - .:/app

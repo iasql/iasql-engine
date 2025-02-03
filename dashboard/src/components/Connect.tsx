@@ -1,11 +1,12 @@
 import { useRef, useState } from 'react';
 
-import { regions } from '@/services/connectDb';
+import { generateConnectionString, regions } from '@/services/connectDb';
 import { LinkIcon } from '@heroicons/react/outline';
 
 import ConnectionString from './ConnectionString';
 import { Combobox, Input, Label, Step, VBox, Wizard } from './common';
 import { ActionType, useAppContext } from './providers/AppProvider';
+import { useAppConfigContext } from './providers/ConfigProvider';
 
 export default function Connect({ closable }: { closable: boolean }) {
   const { error, newDb, dispatch, token } = useAppContext();
@@ -22,6 +23,8 @@ export default function Connect({ closable }: { closable: boolean }) {
   let backEnabled = false;
   let closeButtonEnabled = true;
   const current = stack[stack.length - 1];
+  const { config } = useAppConfigContext();
+
   // Check relevant state per step to determine automatic actions to perform, such as deciding if
   // the Next button should be enabled or not
   switch (current) {
@@ -126,6 +129,7 @@ export default function Connect({ closable }: { closable: boolean }) {
         onFinish={() => {
           dispatch({ action: ActionType.ShowConnect, data: { showConnect: false } });
           dispatch({ action: ActionType.ResetNewDb });
+          dispatch({ action: ActionType.SetConnStr, data: { connString: generateConnectionString(newDb, config?.engine.pgHost, config?.engine.pgForceSsl) } });
         }}
       >
         {!newDb && <Label>Creating an IaSQL database connected to your AWS Account...</Label>}

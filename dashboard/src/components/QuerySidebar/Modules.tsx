@@ -14,7 +14,8 @@ export default function Modules({
   };
   allModules: { [moduleName: string]: string[] };
 }) {
-  const { dispatch } = useAppContext();
+  const { dispatch, token, selectedDb } = useAppContext();
+  
 
   const installedModules = Object.keys(modulesInstalledData ?? {});
   const moduleList: any = {};
